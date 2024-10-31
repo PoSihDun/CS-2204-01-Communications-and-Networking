@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Secure Hash and Error Control Example</title>
+  <style>
+    .section {
+      margin-bottom: 20px;
+    }
+    .details {
+      display: none;
+      padding: 10px;
+      background-color: #f0f0f0;
+      border: 1px solid #ccc;
+    }
+  </style>
+</head>
+<body>
+  <h2>Secure Hash Demonstration (Part 1)</h2>
+  <div class="section">
+    <label for="message">Enter Message (M1):</label>
+    <input type="text" id="message" value="This is John's secret message" size="40">
+    <button onclick="generateHash()">Generate Hash (M2)</button>
+  </div>
+  <div class="section">
+    <p><strong>Original Message (M1):</strong> <span id="originalMessage"></span></p>
+    <p><strong>Salt:</strong> <span id="salt"></span></p>
+    <p><strong>Hash (M2):</strong> <span id="hash"></span></p>
+    <button onclick="verifyHash()">Verify Message</button>
+    <p id="verificationResult"></p>
+    <p id="explanation"></p>
+  </div>
+
+  <h2>Network Security Concepts (Part 2)</h2>
+
+  <!-- Error Control Mechanism Section -->
+  <div class="section">
+    <h3>Error Control Mechanism</h3>
+    <p>This section covers Forward Error Correction (FEC) and Automatic Repeat reQuest (ARQ).</p>
+    <button onclick="toggleDetails('errorControlDetails')">Learn More</button>
+    <div id="errorControlDetails" class="details">
+      <p><strong>Forward Error Correction (FEC):</strong> Adds redundancy to the data, allowing for automatic error correction without retransmission (Salmon, 1982).</p>
+      <p><strong>Automatic Repeat reQuest (ARQ):</strong> Uses error-detection codes to identify corrupted data and requests retransmission, ensuring data integrity (Salmon, 1982).</p>
+    </div>
+  </div>
+
+  <!-- MIME Headers Section -->
+  <div class="section">
+    <h3>MIME Headers in Web Communications</h3>
+    <p>MIME headers specify the content type, helping browsers interpret web data correctly (Herath & Dawda, 2022).</p>
+    <button onclick="toggleDetails('mimeDetails')">Learn More</button>
+    <div id="mimeDetails" class="details">
+      <p>MIME headers classify data as HTML, JSON, or plain text, preventing security risks and display errors by ensuring the correct format (Herath & Dawda, 2022).</p>
+    </div>
+  </div>
+
+  <!-- Spam Prevention Section -->
+  <div class="section">
+    <h3>Spam Messages and Network Security</h3>
+    <p>Understanding the causes of spam and how to prevent compromised devices from sending unauthorized messages.</p>
+    <button onclick="toggleDetails('spamDetails')">Learn More</button>
+    <div id="spamDetails" class="details">
+      <p>Spam messages are often sent by compromised devices, such as those in botnets. Regular scans and security updates help mitigate these risks (Salmon, 1982).</p>
+    </div>
+  </div>
+
+  <!-- VOIP Packet Order Section -->
+  <div class="section">
+    <h3>VOIP Packet Order and Quality</h3>
+    <p>VOIP systems using UDP may experience out-of-order packets, leading to degraded call quality (Herath & Dawda, 2022).</p>
+    <button onclick="toggleDetails('voipDetails')">Learn More</button>
+    <div id="voipDetails" class="details">
+      <p>VOIP applications manage packet order with jitter buffers to handle minor delays, though significant disorder can cause echo and delay (Herath & Dawda, 2022).</p>
+    </div>
+  </div>
+
+  <h3>References</h3>
+  <ul>
+    <li>Herath, C., & Dawda, S. (2022). An Overview of End-to-End Encryption. In Balancing End-to-End Encryption and Public Safety (pp. 5–16). Royal United Services Institute (RUSI). <a href="https://www.jstor.org/stable/resrep59616.6">https://www.jstor.org/stable/resrep59616.6</a></li>
+    <li>Salmon, M. (1982). Error Correction Mechanisms. The Economic Journal, 92(367), 615–629. <a href="https://doi.org/10.2307/2232553">https://doi.org/10.2307/2232553</a></li>
+  </ul>
+
+  <script>
+    // Generate a random salt
+    function generateSalt(length = 16) {
+      const array = new Uint8Array(length);
+      window.crypto.getRandomValues(array);
+      return Array.from(array, byte => byte.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Generate SHA-256 hash with salt
+    async function hashWithSalt(message, salt) {
+      const encoder = new TextEncoder();
+      const data = encoder.encode(message + salt);
+      const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+      return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    // Variables to store original message, salt, and hash
+    let M1 = '';
+    let salt = '';
+    let M2 = '';
+
+    async function generateHash() {
+      M1 = document.getElementById("message").value;
+      salt = generateSalt();
+      M2 = await hashWithSalt(M1, salt);
+
+      document.getElementById("originalMessage").textContent = M1;
+      document.getElementById("salt").textContent = salt;
+      document.getElementById("hash").textContent = M2;
+      document.getElementById("verificationResult").textContent = '';
+      document.getElementById("explanation").textContent = ''; // Clear previous explanation
+    }
+
+    async function verifyHash() {
+      const hashToVerify = await hashWithSalt(M1, salt);
+      const isVerified = hashToVerify === M2;
+
+      document.getElementById("verificationResult").textContent = isVerified ? "Verification Successful" : "Verification Failed";
+
+      if (isVerified) {
+        document.getElementById("explanation").textContent = 
+          "The verification was successful, meaning the message (M1) was indeed the original " +
+          "message used to create the hash (M2). By comparing M2 with a freshly calculated " +
+          "hash of M1 and the salt, we confirmed that no one has tampered with the message, " +
+          "proving John's knowledge of M1 at the time M2 was sent.";
+      } else {
+        document.getElementById("explanation").textContent = 
+          "Verification failed. This means that the message (M1) or salt used to generate " +
+          "the hash (M2) may have been altered.";
+      }
+    }
+
+    // Toggle visibility of additional details
+    function toggleDetails(sectionId) {
+      const details = document.getElementById(sectionId);
+      details.style.display = details.style.display === 'none' || details.style.display === '' ? 'block' : 'none';
+    }
+  </script>
+</body>
+</html>
+
